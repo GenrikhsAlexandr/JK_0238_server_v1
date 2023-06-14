@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">JK_0238_server_v1</string>
+    <string name="loading">loading!</string>
 </resources>
