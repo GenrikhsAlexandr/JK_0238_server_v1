@@ -28,7 +28,10 @@
             </intent-filter>
         </activity>
         <activity android:name=".MainActivity" />
-        <activity android:name=".WebActivity" />
+        <activity android:name=".WebActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="fullSensor"
+            android:windowSoftInputMode="adjustPan" />
     </application>
 
 </manifest>
