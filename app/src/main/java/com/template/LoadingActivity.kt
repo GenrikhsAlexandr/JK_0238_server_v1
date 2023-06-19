@@ -54,20 +54,29 @@ class LoadingActivity : AppCompatActivity() {
         binding = ActivityLoadingBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (getUrlFromPreferences().isNullOrEmpty() && networkAvailable()) {
+        firebaseAnalytics = Firebase.analytics
 
-            askNotificationPermission()
+        askNotificationPermission()
 
-            firebaseAnalytics = Firebase.analytics
+        if (network()) {
+            if (getDomainPreferences().isNullOrEmpty()) {
+                database = Firebase.database.reference
 
-            database = Firebase.database.reference
-
-            database.child("db").child("link").get().addOnSuccessListener {
-                val value = kotlin.runCatching { it.value.toString() }.getOrNull()
-                if (value.isNullOrEmpty()) {
+                database.child("db").child("link").get().addOnSuccessListener {
+                    val value = kotlin.runCatching { it.value.toString() }.getOrNull()
+                    if (value.isNullOrEmpty()) {
+                        saveDomainPreferences(value)
+                        startMainActivity()
+                    } else {
+                        saveDomainPreferences(value)
+                        handleDomain(value)
+                    }
+                }
+            } else {
+                if (getUrlPreferences().isNullOrEmpty()) {
                     startMainActivity()
                 } else {
-                    handleDomain(value)
+                    startWebActivity(url = String())
                 }
             }
         } else {
@@ -75,26 +84,12 @@ class LoadingActivity : AppCompatActivity() {
         }
     }
 
-    private fun startMainActivity() {
-        val intent = Intent(this@LoadingActivity, MainActivity::class.java)
-        startActivity(intent)
-    }
+    private fun handleDomain(domain: String?) {
 
-    private fun startWebActivity(url: String) {
-        val intent = Intent(this@LoadingActivity, WebActivity::class.java)
-        intent.putExtra("url", url)
-        startActivity(intent)
-    }
-
-    private fun handleDomain(domain: String) {
-
-        val timeZone = URLEncoder.encode(TimeZone.getDefault().id)
         val url = "$domain/?packageid=$packageName" +
                 "&usserid=${UUID.randomUUID()}" +
-                "&getz=$timeZone" +
+                "&getz=${URLEncoder.encode(TimeZone.getDefault().id)}" +
                 "&getr=utm_source=google-play&utm_medium=organic"
-
-        saveUrlToPreferences(url)
 
         val client = OkHttpClient()
         val userAgent = System.getProperty("http.agent")
@@ -113,6 +108,7 @@ class LoadingActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 response.use {
                     if (response.isSuccessful) {
+                        saveUrlPreferences(response.body.toString())
                         startWebActivity(url)
                     } else {
                         startMainActivity()
@@ -122,46 +118,70 @@ class LoadingActivity : AppCompatActivity() {
         })
     }
 
-    private fun saveUrlToPreferences(url: String) {
-        val preferences = getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
+    private fun saveDomainPreferences(domain: String?) {
+        val preferences = getSharedPreferences("domain_preferences", Context.MODE_PRIVATE)
+        val editor = preferences.edit()
+        editor.putString("key_domain", domain)
+        editor.apply()
+    }
+
+    private fun getDomainPreferences(): String? {
+        val preferences = getSharedPreferences("domain_preferences", Context.MODE_PRIVATE)
+        return preferences.getString("key_domain", null)
+    }
+
+    private fun saveUrlPreferences(url: String?) {
+        val preferences = getSharedPreferences("url_preferences", Context.MODE_PRIVATE)
         val editor = preferences.edit()
         editor.putString("url_key", url)
         editor.apply()
     }
 
-    private fun getUrlFromPreferences(): String? {
-        val preferences = getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
+    private fun getUrlPreferences(): String? {
+        val preferences = getSharedPreferences("url_preferences", Context.MODE_PRIVATE)
         return preferences.getString("url_key", null)
     }
 
-    private fun networkAvailable(): Boolean {
+    private fun startMainActivity() {
+        val intent = Intent(this@LoadingActivity, MainActivity::class.java)
+        startActivity(intent)
+    }
+
+    private fun startWebActivity(url: String) {
+        val intent = Intent(this@LoadingActivity, WebActivity::class.java)
+        intent.putExtra("url", url)
+        startActivity(intent)
+    }
+
+    private fun network(): Boolean {
         val connectivityManager =
             getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = connectivityManager.activeNetworkInfo
         return networkInfo != null && networkInfo.isConnected
     }
 
+    private fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                }
+
+                shouldShowRequestPermissionRationale(
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) -> {
+                }
+
+                else -> {
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+    }
+
     companion object {
 
         const val ERROR = 403
-    }
-
-    private fun askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS
-                ) ==
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                // FCM SDK and your app can post notifications.
-            } else if (shouldShowRequestPermissionRationale(
-                    Manifest.permission.POST_NOTIFICATIONS
-                )
-            ) {
-                TODO()
-            } else {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
     }
 }

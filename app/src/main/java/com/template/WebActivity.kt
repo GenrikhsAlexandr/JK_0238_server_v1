@@ -1,7 +1,6 @@
 package com.template
 
 import android.os.Bundle
-import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.Toast
@@ -20,6 +19,7 @@ class WebActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val webView: WebView = binding.webView
+
         webView.settings.javaScriptEnabled = true
 
         CookieManager.getInstance().setAcceptCookie(true)
@@ -33,15 +33,13 @@ class WebActivity : AppCompatActivity() {
             Toast.makeText(this, "Url not found", Toast.LENGTH_LONG).show()
         }
 
-        onBackPressedDispatcher.addCallback(this,onBackInvokeCallBack)
+        onBackPressedDispatcher.addCallback(this, onBackInvokeCallBack)
     }
 
     private val onBackInvokeCallBack = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             if (webView.canGoBack()) {
                 webView.goBack()
-            } else {
-                Log.d("onBackPressed", "nowhere to go back")
             }
         }
     }
