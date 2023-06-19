@@ -64,11 +64,10 @@ class LoadingActivity : AppCompatActivity() {
 
                 database.child("db").child("link").get().addOnSuccessListener {
                     val value = kotlin.runCatching { it.value.toString() }.getOrNull()
+                    saveDomainPreferences(value)
                     if (value.isNullOrEmpty()) {
-                        saveDomainPreferences(value)
                         startMainActivity()
                     } else {
-                        saveDomainPreferences(value)
                         handleDomain(value)
                     }
                 }
@@ -76,7 +75,7 @@ class LoadingActivity : AppCompatActivity() {
                 if (getUrlPreferences().isNullOrEmpty()) {
                     startMainActivity()
                 } else {
-                    startWebActivity(url = String())
+                    startWebActivity()
                 }
             }
         } else {
@@ -88,9 +87,8 @@ class LoadingActivity : AppCompatActivity() {
 
         val url = "$domain/?packageid=$packageName" +
                 "&usserid=${UUID.randomUUID()}" +
-                "&getz=${URLEncoder.encode(TimeZone.getDefault().id)}" +
+                "&getz=${URLEncoder.encode(TimeZone.getDefault().id, "UTF-8")}" +
                 "&getr=utm_source=google-play&utm_medium=organic"
-
         val client = OkHttpClient()
         val userAgent = System.getProperty("http.agent")
 
@@ -109,7 +107,7 @@ class LoadingActivity : AppCompatActivity() {
                 response.use {
                     if (response.isSuccessful) {
                         saveUrlPreferences(response.body.toString())
-                        startWebActivity(url)
+                        startWebActivity()
                     } else {
                         startMainActivity()
                     }
@@ -147,9 +145,9 @@ class LoadingActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun startWebActivity(url: String) {
+    private fun startWebActivity() {
         val intent = Intent(this@LoadingActivity, WebActivity::class.java)
-        intent.putExtra("url", url)
+        intent.putExtra("url", "${getUrlPreferences()}")
         startActivity(intent)
     }
 
