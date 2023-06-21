@@ -91,7 +91,6 @@ class LoadingActivity : AppCompatActivity() {
                 "&getr=utm_source=google-play&utm_medium=organic"
         val client = OkHttpClient()
         val userAgent = System.getProperty("http.agent")
-
         val request: Request = Request
             .Builder().url(url)
             .header("User-Agent", userAgent)
@@ -176,10 +175,5 @@ class LoadingActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    companion object {
-
-        const val ERROR = 403
     }
 }
