@@ -1,9 +1,10 @@
 package com.template
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.webkit.CookieManager
 import android.webkit.WebView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.template.databinding.ActivityWebBinding
@@ -28,10 +29,8 @@ class WebActivity : AppCompatActivity() {
 
         webView.isSaveEnabled = true
 
-        val url = intent.getStringExtra("url")
-        url?.let { binding.webView.loadUrl(url) } ?: kotlin.run {
-            Toast.makeText(this, "Url not found", Toast.LENGTH_LONG).show()
-        }
+        val url = intent.getStringExtra(KEY_EXTRA_URL)
+        binding.webView.loadUrl(url!!)
 
         onBackPressedDispatcher.addCallback(this, onBackInvokeCallBack)
     }
@@ -41,6 +40,16 @@ class WebActivity : AppCompatActivity() {
             if (webView.canGoBack()) {
                 webView.goBack()
             }
+        }
+    }
+
+    companion object {
+        private const val KEY_EXTRA_URL = "url"
+
+        fun start(context: Context, url: String) {
+            val intent = Intent(context, WebActivity::class.java)
+            intent.putExtra(KEY_EXTRA_URL, url)
+            context.startActivity(intent)
         }
     }
 }

