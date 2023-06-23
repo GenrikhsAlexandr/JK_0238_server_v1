@@ -3,6 +3,7 @@ package com.template
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
@@ -31,8 +32,8 @@ import java.util.UUID
 class LoadingActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoadingBinding
-    private lateinit var database: DatabaseReference
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private val preferences: SharedPreferences = getSharedPreferences("server_v1", Context.MODE_PRIVATE)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -59,38 +60,51 @@ class LoadingActivity : AppCompatActivity() {
         firebaseAnalytics = Firebase.analytics
 
         if (isNetworkConnected()) {
-            if (fireStoreUrlNullOrEmpty()) {
-                database = Firebase.database.reference
+            println("Network = true")
+            if (wasFireStoreUrlNullOrEmpty()) {
+                println("wasFireStoreUrlNullOrEmpty = true")
+                startMainActivity()
+            } else {
+                println("wasFireStoreUrlNullOrEmpty = false")
+                if (isFinalUrlExists()) {
+                    println("isFinalUrlExists = true")
+                    startWebActivity()
+                } else {
+                    println("isFinalUrlExists = false")
 
-                database.child("db").child("link").get().addOnSuccessListener {
-                    val fireStoreUrl = kotlin.runCatching { it.value.toString() }.getOrNull()
-                    saveFireStoreUrPreferences(fireStoreUrl)
-                    if (fireStoreUrl.isNullOrEmpty()) {
-                        startMainActivity()
-                    } else {
-                        makeRestApiRequest(fireStoreUrl)
+                    Firebase.database.reference.child("db").child("link").get().addOnSuccessListener {
+                        val fireStoreUrl = kotlin.runCatching { it.value.toString() }.getOrNull()
+                        println("Made fireStoreUrl request. fireStoreUrl = $fireStoreUrl")
+                        if (fireStoreUrl.isNullOrEmpty()) {
+                            println("isFireStoreUrlNullOrEmpty = true")
+                            saveWasFireStoreUrlNullOrEmpty()
+                            startMainActivity()
+                        } else {
+                            println("isFireStoreUrlNullOrEmpty = false")
+                            saveFireStoreUrlPreferences(fireStoreUrl)
+                            makeRestApiRequest(fireStoreUrl)
+                        }
                     }
                 }
-            } else {
-                if (isFinalUrlExists()) {
-                    startWebActivity()
-                } else startMainActivity()
             }
-
         } else {
+            println("Network = false")
             if (isFinalUrlExists()) {
+                println("isFinalUrlExists = true")
                 startWebActivity()
             } else {
+                println("isFinalUrlExists = false")
                 startMainActivity()
             }
         }
     }
 
     private fun makeRestApiRequest(fireStoreUrl: String?) {
+        println("makeRestApiRequest")
         val url = "$fireStoreUrl/?packageid=$packageName" +
-                "&usserid=${UUID.randomUUID()}" +
-                "&getz=${URLEncoder.encode(TimeZone.getDefault().id, "UTF-8")}" +
-                "&getr=utm_source=google-play&utm_medium=organic"
+            "&usserid=${UUID.randomUUID()}" +
+            "&getz=${URLEncoder.encode(TimeZone.getDefault().id, "UTF-8")}" +
+            "&getr=utm_source=google-play&utm_medium=organic"
         val client = OkHttpClient()
         val userAgent = System.getProperty("http.agent")
         val request: Request = Request
@@ -100,12 +114,14 @@ class LoadingActivity : AppCompatActivity() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
+                println("RestApiRequest onFailure")
                 e.printStackTrace()
                 startMainActivity()
             }
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
+                    println("RestApiRequest onSuccess")
                     saveFinalUrlPreferences(response.body.toString())
                     startWebActivity()
                 } else {
@@ -116,31 +132,33 @@ class LoadingActivity : AppCompatActivity() {
         })
     }
 
-    private fun saveFireStoreUrPreferences(domain: String?) {
-        val preferences = getSharedPreferences("domain_preferences", Context.MODE_PRIVATE)
+    private fun saveFireStoreUrlPreferences(fireStoreUrl: String?) {
+        println("save fireStoreUrl to preferences = $fireStoreUrl")
         val editor = preferences.edit()
-        editor.putString("key_domain", domain)
+        editor.putString("key_domain", fireStoreUrl)
         editor.apply()
     }
 
-    private fun getFireStoreUrlNullOrEmptyPreferences(): String? {
-        val preferences = getSharedPreferences("domain_preferences", Context.MODE_PRIVATE)
-        return preferences.getString("key_domain", null)
+    private fun wasFireStoreUrlNullOrEmpty(): Boolean {
+        return preferences.getBoolean("wasFireStoreUrlNullOrEmpty", false)
     }
 
-    private fun fireStoreUrlNullOrEmpty(): Boolean {
-        return getFireStoreUrlNullOrEmptyPreferences().isNullOrEmpty()
+    private fun saveWasFireStoreUrlNullOrEmpty() {
+        println("save wasFireStoreUrlNullOrEmpty to preferences = true")
+        val editor = preferences.edit()
+        editor.putBoolean("wasFireStoreUrlNullOrEmpty", true)
+        editor.apply()
     }
+
 
     private fun saveFinalUrlPreferences(url: String?) {
-        val preferences = getSharedPreferences("url_preferences", Context.MODE_PRIVATE)
+        println("save finalUrl to preferences = $url")
         val editor = preferences.edit()
         editor.putString("url_key", url)
         editor.apply()
     }
 
     private fun getFinalUrlPreferences(): String? {
-        val preferences = getSharedPreferences("url_preferences", Context.MODE_PRIVATE)
         return preferences.getString("url_key", null)
     }
 
@@ -149,11 +167,13 @@ class LoadingActivity : AppCompatActivity() {
     }
 
     private fun startMainActivity() {
+        println("startMainActivity")
         val intent = Intent(this@LoadingActivity, MainActivity::class.java)
         startActivity(intent)
     }
 
     private fun startWebActivity() {
+        println("startWebActivity")
         WebActivity.start(
             this@LoadingActivity,
             getFinalUrlPreferences() ?: error("Must not be null")
