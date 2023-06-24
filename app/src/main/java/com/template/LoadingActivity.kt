@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -32,10 +31,12 @@ class LoadingActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoadingBinding
     private lateinit var firebaseAnalytics: FirebaseAnalytics
-    private val preferences: SharedPreferences by lazy {  getSharedPreferences(
-        "server_v1",
-        Context.MODE_PRIVATE
-    )}
+    private val preferences: SharedPreferences by lazy {
+        getSharedPreferences(
+            "server_v1",
+            Context.MODE_PRIVATE
+        )
+    }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -62,35 +63,23 @@ class LoadingActivity : AppCompatActivity() {
         firebaseAnalytics = Firebase.analytics
 
         if (isNetworkConnected()) {
-            Log.d("xxx","Network = true")
             if (wasFireStoreUrlNullOrEmpty()) {
-                Log.d("xxx","wasFireStoreUrlNullOrEmpty = true")
                 startMainActivity()
             } else {
-                Log.d("xxx", "wasFireStoreUrlNullOrEmpty = false")
                 if (isFinalUrlExists()) {
-                    Log.d("xxx", "isFinalUrlExists = true")
                     startWebActivity()
                 } else {
                     if (isFireStoreUrl()) {
-                        Log.d("xxx", "isFireStoreUrl = true")
                         startMainActivity()
                     } else {
-                        Log.d("xxx", "isFinalUrlExists = false")
                         Firebase.database.reference.child("db").child("link").get()
                             .addOnSuccessListener {
                                 val fireStoreUrl =
                                     kotlin.runCatching { it.value.toString() }.getOrNull()
-                                Log.d(
-                                    "xxx",
-                                    "Made fireStoreUrl request. fireStoreUrl = $fireStoreUrl"
-                                )
                                 if (fireStoreUrl.isNullOrEmpty()) {
-                                    println("isFireStoreUrlNullOrEmpty = true")
                                     saveWasFireStoreUrlNullOrEmpty()
                                     startMainActivity()
                                 } else {
-                                    Log.d("xxx", "isFireStoreUrlNullOrEmpty = false")
                                     saveFireStoreUrlPreferences(fireStoreUrl)
                                     makeRestApiRequest(fireStoreUrl)
                                 }
@@ -99,19 +88,15 @@ class LoadingActivity : AppCompatActivity() {
                 }
             }
         } else {
-            Log.d("xxx","Network = false")
             if (isFinalUrlExists()) {
-                Log.d("xxx","isFinalUrlExists = true")
                 startWebActivity()
             } else {
-                Log.d("xxx","isFinalUrlExists = false")
                 startMainActivity()
             }
         }
     }
 
     private fun makeRestApiRequest(fireStoreUrl: String?) {
-        println("makeRestApiRequest")
         val url = "$fireStoreUrl/?packageid=$packageName" +
                 "&usserid=${UUID.randomUUID()}" +
                 "&getz=${URLEncoder.encode(TimeZone.getDefault().id, "UTF-8")}" +
@@ -125,18 +110,15 @@ class LoadingActivity : AppCompatActivity() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.d("xxx","RestApiRequest onFailure")
                 e.printStackTrace()
                 startMainActivity()
             }
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    saveFinalUrlPreferences(url)
-                    Log.d("xxx","RestApiRequest onSuccess")
+                    saveFinalUrlPreferences(response.body?.string())
                     startWebActivity()
                 } else {
-                    Log.d("xxx", "$url")
                     startMainActivity()
                 }
             }
@@ -144,7 +126,6 @@ class LoadingActivity : AppCompatActivity() {
     }
 
     private fun saveFireStoreUrlPreferences(fireStoreUrl: String?) {
-        Log.d("xxx","save fireStoreUrl to preferences = $fireStoreUrl")
         val editor = preferences.edit()
         editor.putString("key_domain", fireStoreUrl)
         editor.apply()
@@ -163,15 +144,12 @@ class LoadingActivity : AppCompatActivity() {
     }
 
     private fun saveWasFireStoreUrlNullOrEmpty() {
-        Log.d("xxx","save wasFireStoreUrlNullOrEmpty to preferences = true")
         val editor = preferences.edit()
         editor.putBoolean("wasFireStoreUrlNullOrEmpty", true)
         editor.apply()
     }
 
-
     private fun saveFinalUrlPreferences(url: String?) {
-        Log.d("xxx","save finalUrl to preferences = $url")
         val editor = preferences.edit()
         editor.putString("url_key", url)
         editor.apply()
@@ -186,13 +164,11 @@ class LoadingActivity : AppCompatActivity() {
     }
 
     private fun startMainActivity() {
-        Log.d("xxx","startMainActivity")
         val intent = Intent(this@LoadingActivity, MainActivity::class.java)
         startActivity(intent)
     }
 
     private fun startWebActivity() {
-        Log.d("xxx","startWebActivity")
         WebActivity.start(
             this@LoadingActivity,
             getFinalUrlPreferences() ?: error("Must not be null")
