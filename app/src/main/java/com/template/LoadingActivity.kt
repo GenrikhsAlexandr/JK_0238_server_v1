@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -72,18 +73,22 @@ class LoadingActivity : AppCompatActivity() {
                     if (isFireStoreUrl()) {
                         startMainActivity()
                     } else {
-                        Firebase.database.reference.child("db").child("link").get()
-                            .addOnSuccessListener {
-                                val fireStoreUrl =
-                                    kotlin.runCatching { it.value.toString() }.getOrNull()
-                                if (fireStoreUrl.isNullOrEmpty()) {
-                                    saveWasFireStoreUrlNullOrEmpty()
-                                    startMainActivity()
-                                } else {
-                                    saveFireStoreUrlPreferences(fireStoreUrl)
-                                    makeRestApiRequest(fireStoreUrl)
+                        try {
+                            Firebase.database.reference.child("db").child("link").get()
+                                .addOnSuccessListener {
+                                    val fireStoreUrl =
+                                        kotlin.runCatching { it.value.toString() }.getOrNull()
+                                    if (fireStoreUrl.isNullOrEmpty()) {
+                                        saveWasFireStoreUrlNullOrEmpty()
+                                        startMainActivity()
+                                    } else {
+                                        saveFireStoreUrlPreferences(fireStoreUrl)
+                                        makeRestApiRequest(fireStoreUrl)
+                                    }
                                 }
-                            }
+                        } catch (e: Exception) {
+                            startMainActivity()
+                        }
                     }
                 }
             }

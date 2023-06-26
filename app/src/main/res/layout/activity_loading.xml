@@ -6,7 +6,9 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
-    tools:context=".LoadingActivity">
+    tools:context=".LoadingActivity"
+    android:fitsSystemWindows="true"
+    >
 
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progressBar"
