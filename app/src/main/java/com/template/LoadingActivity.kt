@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -65,30 +66,35 @@ class LoadingActivity : AppCompatActivity() {
 
         if (isNetworkConnected()) {
             if (wasFireStoreUrlNullOrEmpty()) {
+                Log.d("xxx", " wasFireStoreUrlNullOrEmpty = true")
+
                 startMainActivity()
             } else {
                 if (isFinalUrlExists()) {
                     startWebActivity()
+                    Log.d("xxx", "isFinalUrlExists= true")
+
                 } else {
                     if (isFireStoreUrl()) {
                         startMainActivity()
                     } else {
-                        try {
-                            Firebase.database.reference.child("db").child("link").get()
-                                .addOnSuccessListener {
-                                    val fireStoreUrl =
-                                        kotlin.runCatching { it.value.toString() }.getOrNull()
-                                    if (fireStoreUrl.isNullOrEmpty()) {
-                                        saveWasFireStoreUrlNullOrEmpty()
-                                        startMainActivity()
-                                    } else {
-                                        saveFireStoreUrlPreferences(fireStoreUrl)
-                                        makeRestApiRequest(fireStoreUrl)
-                                    }
+                        Firebase.database.reference.child("db").child("link").get()
+                            .addOnSuccessListener {
+                                Log.d("xxx", " Firebase =${it.value.toString()}")
+                                try {
+                                    val fireStoreUrl = it.value.toString()
+                                    Log.d("xxx", " fireStoreUrl =$fireStoreUrl")
+
+                                    saveFireStoreUrlPreferences(fireStoreUrl)
+                                    makeRestApiRequest(fireStoreUrl)
+                                    Log.d("xxx", " fireStoreUrl.isNullOrEmpty() =false")
+
+                                } catch (e: Exception) {
+                                    Log.d("xxx", " crash = ${e.message}")
+                                    saveWasFireStoreUrlNullOrEmpty()
+                                    startMainActivity()
                                 }
-                        } catch (e: Exception) {
-                            startMainActivity()
-                        }
+                            }
                     }
                 }
             }
