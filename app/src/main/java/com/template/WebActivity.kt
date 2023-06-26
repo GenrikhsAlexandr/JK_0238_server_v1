@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebView
@@ -16,7 +17,7 @@ import com.template.databinding.ActivityWebBinding
 class WebActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWebBinding
-    private lateinit var webView: WebView
+    private var webView: WebView? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,16 +40,23 @@ class WebActivity : AppCompatActivity() {
         val url = intent.getStringExtra(KEY_EXTRA_URL)
         binding.webView.loadUrl(url!!)
 
-        onBackPressedDispatcher.addCallback(this, onBackInvokeCallBack)
+        onBackPressedDispatcher.addCallback(onBackInvokeCallBack)
     }
 
     private val onBackInvokeCallBack = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            if (webView.canGoBack()) {
-                webView.goBack()
+            if (webView?.canGoBack() == true) {
+                webView?.goBack()
             } else {
+                Log.d("webView", "WebActivity handleOnBackPressed: No history")
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        webView?.destroy()
+        webView = null
     }
 
     companion object {
