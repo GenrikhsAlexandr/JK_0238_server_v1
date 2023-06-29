@@ -9,7 +9,6 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -80,17 +79,11 @@ class LoadingActivity : AppCompatActivity() {
                     } else {
                         Firebase.database.reference.child("db").child("link").get()
                             .addOnSuccessListener {
-                                Log.d("xxx", " Firebase =${it.value.toString()}")
                                 try {
                                     val fireStoreUrl = it.value.toString()
-                                    Log.d("xxx", " fireStoreUrl =$fireStoreUrl")
-
                                     saveFireStoreUrlPreferences(fireStoreUrl)
                                     makeRestApiRequest(fireStoreUrl)
-                                    Log.d("xxx", " fireStoreUrl.isNullOrEmpty() =false")
-
                                 } catch (e: Exception) {
-                                    Log.d("xxx", " crash = ${e.message}")
                                     saveWasFireStoreUrlNullOrEmpty()
                                     startMainActivity()
                                 }
