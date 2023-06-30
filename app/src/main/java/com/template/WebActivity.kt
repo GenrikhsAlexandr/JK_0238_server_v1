@@ -21,23 +21,20 @@ class WebActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityWebBinding.inflate(layoutInflater)
+         binding = ActivityWebBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val webView: WebView = binding.webView
+        webView = binding.webView
 
-        webView.settings.javaScriptEnabled = true
-
-        webView.webViewClient = WebViewClient()
-
+        webView?.settings?.javaScriptEnabled = true
+        webView?.settings?.domStorageEnabled = true
+        webView?.settings?.javaScriptCanOpenWindowsAutomatically = true
+        webView!!.isSaveEnabled = true
         CookieManager.getInstance().setAcceptCookie(true)
-
-        webView.settings.javaScriptCanOpenWindowsAutomatically = true
-
-        webView.isSaveEnabled = true
+        webView!!.webViewClient = WebViewClient()
 
         val url = intent.getStringExtra(KEY_EXTRA_URL)
-        binding.webView.loadUrl(url!!)
+        webView!!.loadUrl(url!!)
 
         onBackPressedDispatcher.addCallback(onBackInvokeCallBack)
     }

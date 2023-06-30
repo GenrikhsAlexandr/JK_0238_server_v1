@@ -65,14 +65,11 @@ class LoadingActivity : AppCompatActivity() {
 
         if (isNetworkConnected()) {
             if (wasFireStoreUrlNullOrEmpty()) {
-                Log.d("xxx", " wasFireStoreUrlNullOrEmpty = true")
-
                 startMainActivity()
+                Log.d("xxx", "onCreate: wasFireStoreUrlNullOrEmpty")
             } else {
                 if (isFinalUrlExists()) {
                     startWebActivity()
-                    Log.d("xxx", "isFinalUrlExists= true")
-
                 } else {
                     if (isFireStoreUrl()) {
                         startMainActivity()
