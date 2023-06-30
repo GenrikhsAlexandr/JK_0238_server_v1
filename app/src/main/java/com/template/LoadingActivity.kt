@@ -53,6 +53,7 @@ class LoadingActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
+        initRedirect()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,9 +61,15 @@ class LoadingActivity : AppCompatActivity() {
         binding = ActivityLoadingBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        askNotificationPermission()
+        val shouldAsk = askNotificationPermission()
         firebaseAnalytics = Firebase.analytics
 
+        if (!shouldAsk) {
+            initRedirect()
+        }
+    }
+
+    private fun initRedirect() {
         if (isNetworkConnected()) {
             if (wasFireStoreUrlNullOrEmpty()) {
                 startMainActivity()
@@ -183,23 +190,32 @@ class LoadingActivity : AppCompatActivity() {
         return networkInfo != null && networkInfo.isConnected
     }
 
-    private fun askNotificationPermission() {
+    /**
+     * @return true if show permission dialog, otherwise false
+     */
+    private fun askNotificationPermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             when {
                 ContextCompat.checkSelfPermission(
                     this, Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permission is granted
+                    return false
                 }
 
                 shouldShowRequestPermissionRationale(
                     Manifest.permission.POST_NOTIFICATIONS
                 ) -> {
+                    return false
                 }
 
                 else -> {
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    return true
                 }
             }
         }
+        // For Android 32 and below don't need to ask for permission
+        return false
     }
 }
