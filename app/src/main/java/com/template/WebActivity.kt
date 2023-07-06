@@ -3,9 +3,11 @@ package com.template
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.webkit.CookieManager
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
@@ -21,7 +23,7 @@ class WebActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-         binding = ActivityWebBinding.inflate(layoutInflater)
+        binding = ActivityWebBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         webView = binding.webView
@@ -29,23 +31,52 @@ class WebActivity : AppCompatActivity() {
         webView?.settings?.javaScriptEnabled = true
         webView?.settings?.domStorageEnabled = true
         webView?.settings?.javaScriptCanOpenWindowsAutomatically = true
-        webView!!.isSaveEnabled = true
+        webView?.isSaveEnabled = true
         CookieManager.getInstance().setAcceptCookie(true)
-        webView!!.webViewClient = WebViewClient()
 
-        val url = intent.getStringExtra(KEY_EXTRA_URL)
-        webView!!.loadUrl(url!!)
+        webView?.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(
+                view: WebView,
+                request: WebResourceRequest
+            ): Boolean {
+                val url = request.url.toString()
 
-        onBackPressedDispatcher.addCallback(onBackInvokeCallBack)
-    }
+                if (!url.contains("yandex.ru")) {
+                    Log.d("webView", "shouldOverrideUrlLoading: $url")
+                    view.loadUrl(url)
 
-    private val onBackInvokeCallBack = object : OnBackPressedCallback(true) {
-        override fun handleOnBackPressed() {
-            if (webView?.canGoBack() == true) {
-                webView?.goBack()
-            } else {
-                Log.d("webView", "WebActivity handleOnBackPressed: No history")
+                }
+                return true
             }
+        }
+
+            val url = intent.getStringExtra(KEY_EXTRA_URL)
+        webView?.loadUrl(url!!)
+
+        val onBackInvokeCallBack = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+
+                if (webView!!.canGoBack()) {
+                    webView!!.goBack()
+                    Log.d("webView", webView.toString())
+                } else {
+
+                    Log.d(
+                        "webView",
+                        "WebActivity handleOnBackPressed: No history  ${webView.toString()}"
+                    )
+                }
+            }
+        }
+
+        onBackPressedDispatcher.addCallback(this, onBackInvokeCallBack)
+
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true)
+
+
         }
     }
 

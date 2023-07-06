@@ -9,7 +9,6 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -43,15 +42,9 @@ class LoadingActivity : AppCompatActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            Toast.makeText(
-                this, "Notifications permission granted", Toast.LENGTH_SHORT
-            )
-                .show()
+            Log.d("xxx", "requestPermissionLauncher isGranted")
         } else {
-            Toast.makeText(
-                this@LoadingActivity, "Your app will not show notifications",
-                Toast.LENGTH_LONG
-            ).show()
+            Log.d("xxx", "requestPermissionLauncher !isGranted")
         }
         initRedirect()
     }
@@ -73,7 +66,6 @@ class LoadingActivity : AppCompatActivity() {
         if (isNetworkConnected()) {
             if (wasFireStoreUrlNullOrEmpty()) {
                 startMainActivity()
-                Log.d("xxx", "onCreate: wasFireStoreUrlNullOrEmpty")
             } else {
                 if (isFinalUrlExists()) {
                     startWebActivity()
