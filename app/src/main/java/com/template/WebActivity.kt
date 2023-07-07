@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.webkit.CookieManager
-import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
@@ -29,7 +28,6 @@ class WebActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         webView = binding.webView
-
         webView?.settings?.javaScriptEnabled = true
         webView?.settings?.domStorageEnabled = true
         webView?.settings?.javaScriptCanOpenWindowsAutomatically = true
@@ -71,7 +69,6 @@ class WebActivity : AppCompatActivity() {
             WebView.setWebContentsDebuggingEnabled(true)
         }
     }
-
 
     override fun onDestroy() {
         super.onDestroy()
