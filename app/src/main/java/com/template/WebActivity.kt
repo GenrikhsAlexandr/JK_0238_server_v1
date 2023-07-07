@@ -35,20 +35,7 @@ class WebActivity : AppCompatActivity() {
         webView?.settings?.javaScriptCanOpenWindowsAutomatically = true
         webView?.isSaveEnabled = true
         CookieManager.getInstance().setAcceptCookie(true)
-
-        webView?.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(
-                view: WebView, request: WebResourceRequest
-            ): Boolean {
-                val webViewUrl = request.url.toString()
-
-                if (!webViewUrl.contains("yandex.ru")) {
-                    Log.d("webView", "shouldOverrideUrlLoading: $webViewUrl")
-                    view.loadUrl(webViewUrl)
-                }
-                return true
-            }
-        }
+        webView?.webViewClient = WebViewClient()
 
         val url = intent.getStringExtra(KEY_EXTRA_URL)
         webView?.loadUrl(url!!)
