@@ -19,6 +19,8 @@ class WebActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWebBinding
     private var webView: WebView? = null
+    private var previousUrl: String? = null
+    private var currentUrl: String? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,49 +38,53 @@ class WebActivity : AppCompatActivity() {
 
         webView?.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
-                view: WebView,
-                request: WebResourceRequest
+                view: WebView, request: WebResourceRequest
             ): Boolean {
-                val url = request.url.toString()
+                val webViewUrl = request.url.toString()
 
-                if (!url.contains("yandex.ru")) {
-                    Log.d("webView", "shouldOverrideUrlLoading: $url")
-                    view.loadUrl(url)
-
+                if (!webViewUrl.contains("yandex.ru")) {
+                    Log.d("webView", "shouldOverrideUrlLoading: $webViewUrl")
+                    view.loadUrl(webViewUrl)
                 }
                 return true
             }
         }
 
-            val url = intent.getStringExtra(KEY_EXTRA_URL)
+        val url = intent.getStringExtra(KEY_EXTRA_URL)
         webView?.loadUrl(url!!)
 
         val onBackInvokeCallBack = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                currentUrl = webView?.url
+                Log.d("webView", "getUrl  = $currentUrl")
 
-                if (webView!!.canGoBack()) {
-                    webView!!.goBack()
-                    Log.d("webView", webView.toString())
-                } else {
+                if (previousUrl == null) {
+                    previousUrl = webView?.url
+                    Log.d("webView", "previousUrlUrlNull = $previousUrl")
+                    return
+                }
 
-                    Log.d(
-                        "webView",
-                        "WebActivity handleOnBackPressed: No history  ${webView.toString()}"
-                    )
+                if (currentUrl != previousUrl) {
+                    if (webView?.canGoBack() == true) {
+                        webView?.goBack()
+                        currentUrl = webView?.url
+                        Log.d("webView", "canGoBack = ${webView!!.id}")
+                    } else {
+                        Log.d(
+                            "webView",
+                            "WebActivity handleOnBackPressed: No history  ${webView.toString()}"
+                        )
+                    }
                 }
             }
         }
-
         onBackPressedDispatcher.addCallback(this, onBackInvokeCallBack)
-
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             WebView.setWebContentsDebuggingEnabled(true)
-
-
         }
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
